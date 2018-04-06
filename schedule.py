@@ -57,3 +57,15 @@ class ScheduleManager(object):
             else:
                 break
         return self.timezone.localize(wake_day.combine(wake_day, sched[0]))
+
+    def live_now(self, now=datetime.now):
+        schedule = self._getsched()
+        if schedule == [None]*7:
+            return True
+        if callable(now):
+            now = now()
+        sched = schedule[now.weekday()]
+        now = now.time()
+        if sched is None:
+            return False
+        return sched[0] <= now <= sched[1]
