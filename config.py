@@ -1,11 +1,15 @@
 import yaml
 import os
-import pyinotify
+try:
+    import pyinotify
+except ImportError:
+    pyinotify = None
 
 class Config(object):
     def __init__(self, path=None):
         self.config = {}
-        self._wm = pyinotify.WatchManager()
+        if pyinotify:
+            self._wm = pyinotify.WatchManager()
 
         self.reload(path or '~/.sensei.yaml')
 
@@ -15,15 +19,18 @@ class Config(object):
             if os.path.isfile(path):
                 self.path = path
                 # Watch config file
-                self._wm.watches.clear()
-                self._wm.watch_transient_file(path, pyinotify.IN_CLOSE_WRITE, lambda x:lambda x:None)
-                self._nm = pyinotify.Notifier(self._wm)
+                if pyinotify:
+                    self._wm.watches.clear()
+                    self._wm.watch_transient_file(path, pyinotify.IN_CLOSE_WRITE, lambda x:lambda x:None)
+                    self._nm = pyinotify.Notifier(self._wm)
 
         with open(self.path, 'r') as strm:
             self.config = yaml.load(strm)
 
     def check_config(self):
         """Check if config has changed - very fast, can do on every access"""
+        if not pyinotify:
+            return False
         changed = False
         while self._nm.check_events(0):
             self._nm.read_events()
