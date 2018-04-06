@@ -1,6 +1,7 @@
 from functools import lru_cache
 import tzlocal
 from datetime import datetime, timedelta
+from dateutil import parser
 
 class ScheduleManager(object):
     def __init__(self, config):
@@ -13,7 +14,7 @@ class ScheduleManager(object):
         # If day isn't defined, 9-5. If defined and empty, not on that day
         if not day_sched:
             return None
-        day_sched = [int(x) for x in day_sched.split('-')]
+        day_sched = [parser.parse(x).time() for x in day_sched.split('-')]
         return day_sched
 
     def _getsched(self):
@@ -32,7 +33,7 @@ class ScheduleManager(object):
         schedule = self._getsched()
         if schedule == [None]*7:
             return 0
-        sleep_day = datetime.now().replace(tzinfo=self.timezone, hour=0, minute=0, second=0, microsecond=0)
+        sleep_day = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         sched = None
         while True:
             sched = schedule[sleep_day.weekday()]
@@ -40,14 +41,14 @@ class ScheduleManager(object):
                 sleep_day -= timedelta(1)
             else:
                 break
-        return sleep_day.replace(hour=sched[1])
+        return self.timezone.localize(sleep_day.combine(sleep_day, sched[1]))
 
     def get_next_wake(self):
         # If schedule key exists and is empty, then there is no schedule
         schedule = self._getsched()
         if schedule == [None]*7:
             return 0
-        wake_day = datetime.now().replace(tzinfo=self.timezone, hour=0, minute=0, second=0, microsecond=0) + timedelta(1)
+        wake_day = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(1)
         sched = None
         while True:
             sched = schedule[wake_day.weekday()]
@@ -55,4 +56,4 @@ class ScheduleManager(object):
                 wake_day += timedelta(1)
             else:
                 break
-        return wake_day.replace(hour=sched[0])
+        return self.timezone.localize(wake_day.combine(wake_day, sched[0]))
