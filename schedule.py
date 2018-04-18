@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from dateutil import parser
 
 class ScheduleManager(object):
-    def __init__(self, config, timezone):
+    def __init__(self, config, timezone=None):
         self.config = config
         if timezone == None:
             self.timezone = tzlocal.get_localzone()
