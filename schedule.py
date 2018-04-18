@@ -4,9 +4,12 @@ from datetime import datetime, timedelta
 from dateutil import parser
 
 class ScheduleManager(object):
-    def __init__(self, config):
+    def __init__(self, config, timezone=None):
         self.config = config
-        self.timezone = tzlocal.get_localzone()
+        if timezone == None:
+            self.timezone = tzlocal.get_localzone()
+        else:
+            self.timezone = timezone
 
     @staticmethod
     @lru_cache(maxsize=8, typed=True)
@@ -58,12 +61,12 @@ class ScheduleManager(object):
                 break
         return self.timezone.localize(wake_day.combine(wake_day, sched[0]))
 
-    def live_now(self, now=datetime.now):
+    def live_now(self, now=None):
+        if now == None:
+            now = datetime.now(tz=self.timezone)
         schedule = self._getsched()
         if schedule == [None]*7:
             return True
-        if callable(now):
-            now = now()
         sched = schedule[now.weekday()]
         now = now.time()
         if sched is None:
